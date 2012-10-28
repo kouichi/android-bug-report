@@ -1,0 +1,7 @@
+<resources>
+
+    <string name="app_name">BugReport</string>
+    <string name="menu_settings">Settings</string>
+    <string name="main_activity_title">Bug Report Sample</string>
+
+</resources>
