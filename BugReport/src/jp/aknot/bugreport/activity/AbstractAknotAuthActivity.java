@@ -2,22 +2,28 @@ package jp.aknot.bugreport.activity;
 
 import jp.aknot.bugreport.util.LogUtil;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Toast;
 
 public abstract class AbstractAknotAuthActivity extends Activity {
-
     static final String TAG = "@" + AbstractAknotAuthActivity.class.getSimpleName();
 
-    private static final int REQ_RELOGIN_FOR_ON_CREATE_ID              = 0;
-    private static final int REQ_RELOGIN_FOR_UNAUTHORIZED_EXCEPTION_ID = 1;
+    private static final int REQ_RELOGIN_FOR_ON_CREATE_ID              = -1;
+//    private static final int REQ_RELOGIN_FOR_UNAUTHORIZED_EXCEPTION_ID = -2;
 
-    public boolean isAllowRedirectLogin() {
+    private static final int DLG_ERR_UNAUTHORIZED_ID = -1;
+
+    protected boolean isAuthenticationRequired() {
         return true;
     }
 
+    protected boolean isAllowRedirectLogin() {
+        return true;
+    }
+
+    @SuppressWarnings("deprecation")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -25,15 +31,21 @@ public abstract class AbstractAknotAuthActivity extends Activity {
         try {
             setupViews();
         } catch (UnauthorizedException ex) {
-            if (isAllowRedirectLogin()) {
-                redirectLogin(REQ_RELOGIN_FOR_ON_CREATE_ID);
+            if (isAuthenticationRequired()) {
+                if (isAllowRedirectLogin()) {
+                    redirectLogin(REQ_RELOGIN_FOR_ON_CREATE_ID);
+                } else {
+                    showDialog(DLG_ERR_UNAUTHORIZED_ID);
+                }
             }
         } finally {
-
+            setupViewsFinalize();
         }
     }
 
     protected abstract void setupViews() throws UnauthorizedException;
+    protected void setupViewsFinalize() {
+    }
 
     protected void redirectLogin(int requestCode) {
         Intent intent = new Intent(AbstractAknotAuthActivity.this, LoginActivity.class);
@@ -59,20 +71,15 @@ public abstract class AbstractAknotAuthActivity extends Activity {
     @SuppressWarnings("deprecation")
     @Override
     protected Dialog onCreateDialog(int id) {
-        return super.onCreateDialog(id);
-    }
-
-    protected void showTaskFailedMsg(int id, Exception ex) {
-        LogUtil.d(TAG, "Failed Task Failre!: id=" + id, ex);
-
-        if (ex instanceof UnauthorizedException) {
-            redirectLogin(REQ_RELOGIN_FOR_UNAUTHORIZED_EXCEPTION_ID);
-        } else {
-
+        switch (id) {
+        case DLG_ERR_UNAUTHORIZED_ID:
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("認証エラー");
+            builder.setMessage("この画面にアクセスするためにはログインする必要があります。");
+            builder.setPositiveButton("OK", null);
+            return builder.create();
+        default:
+            return super.onCreateDialog(id);
         }
-    }
-
-    protected void showTaskSuccessMsg(int id) {
-        Toast.makeText(this, "Task succeeded!", Toast.LENGTH_LONG).show();
     }
 }

@@ -1,13 +1,14 @@
 package jp.aknot.bugreport.activity;
 
 import jp.aknot.bugreport.R;
-import android.view.Menu;
+import jp.aknot.bugreport.util.LogUtil;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 public class MainActivity extends AbstractAknotAuthActivity {
 
-    private static final int TASK_SAMPLE = 1;
+    private static final int TASK_SAMPLE_ID = 999;
 
     @Override
     protected void setupViews() throws UnauthorizedException {
@@ -29,21 +30,37 @@ public class MainActivity extends AbstractAknotAuthActivity {
                     }
 
                     @Override
-                    public void onTaskFailure(Exception ex) {
-                        showTaskFailedMsg(TASK_SAMPLE, ex);
+                    public void onTaskSuccess(Object result) {
+                        showTaskSuccessMsg(taskId);
                     }
                     @Override
-                    public void onTaskSuccess() {
-                        showTaskSuccessMsg(TASK_SAMPLE);
+                    public void onTaskFailure(Object result) {
+                        showTaskFailureMsg(taskId, result);
                     }
-                }.execute();
+                    @Override
+                    public void onTaskError(Throwable tr) {
+                        showTaskErrorMsg(taskId, tr);
+                    }
+                }
+                .setTaskId(TASK_SAMPLE_ID)
+                .createProgressDialog(MainActivity.this, null, "処理中...")
+                .execute();
             }
         });
+
+        // 認証エラーを意図的に発生させる
+        throw new UnauthorizedException();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
+    private void showTaskSuccessMsg(int id) {
+        Toast.makeText(this, "Task succeeded!", Toast.LENGTH_LONG).show();
+    }
+
+    private void showTaskFailureMsg(int id, Object result) {
+        LogUtil.w(TAG, "Failed to process task!: id=" + id + ", result=" + result);
+    }
+
+    private void showTaskErrorMsg(int id, Throwable tr) {
+        LogUtil.e(TAG, "Error Task!: id=" + id, tr);
     }
 }
